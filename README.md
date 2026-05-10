@@ -1,170 +1,83 @@
-# QA System - Quiz Master
+# 🎓 RACE QA System - Quiz Master
 
-A comprehensive machine learning-based question answering system with multiple-choice quiz generation, hint extraction, and distractor generation.
+An advanced Machine Learning pipeline and interactive application designed to solve complex Reading Comprehension (RACE) tasks. This system not only predicts answers but also generates high-quality distractors and hints to create a complete educational experience.
 
-## Overview
+## 🌟 Key Features
 
-This project implements:
-- **Model A (Supervised)**: Logistic Regression, SVM, and Voting Ensemble for answer prediction
-- **Model A (Unsupervised)**: K-Means clustering with automatic cluster selection
-- **Model B (Distractors)**: Intelligent distractor generation using TF-IDF similarity
-- **Model B (Hints)**: Automatic hint extraction from articles
-- **Streamlit UI**: Interactive web application with 4 screens and developer dashboard
+### 🧠 Intelligent Answer Prediction (Model A)
+- **Supervised Learning**: A robust Soft-Voting Ensemble combining **Logistic Regression**, **Linear SVM**, and **Naive Bayes**.
+- **Unsupervised Learning**: K-Means Clustering with automated silhouette-score optimization for cluster discovery.
+- **Deep Feature Engineering**: custom TF-IDF pipeline with 5,000 features and sophisticated text cleaning.
 
-## Features
+### 📝 Content Generation (Model B)
+- **ML-Based Distractor Ranker**: Uses a trained classifier to rank potential distractors based on semantic relevance and linguistic similarity.
+- **Progressive Hint Extraction**: Automatically extracts and ranks hints from articles using cosine similarity to the question/answer context.
 
-### Models
-- **TF-IDF Vectorization**: 5000 features with English stop words
-- **Supervised Learning**: Logistic Regression, Linear SVM, and Soft Voting Ensemble
-- **Clustering**: K-Means with silhouette-based optimal cluster selection
-- **Text Analysis**: TF-IDF based similarity for hints and distractors
+### 📊 Evaluation & Analytics
+- **NLP Metrics**: Comprehensive evaluation using **BLEU**, **ROUGE**, and **METEOR** scores.
+- **Classification Metrics**: Detailed Confusion Matrices and F1-score reporting.
+- **Developer Dashboard**: A built-in Streamlit dashboard for real-time model monitoring and session logging.
 
-### Streamlit App (4 Screens)
-1. **Article Input**: Load articles manually or randomly from RACE dataset
-2. **Quiz View**: Multiple-choice questions with answer checking and hints
-3. **Hint Panel**: Progressive hints with reveal functionality
-4. **Developer Dashboard**: Model metrics, session statistics, and log export
+---
 
-## Setup
+## 📂 Project Structure
 
-### Requirements
-```bash
-pip install -r requirements.txt
-```
-
-### Directory Structure
-project/
-├── requirements.txt
-├── README.md
+```text
+├── app/                  # Streamlit Web Application
 ├── data/
-│   ├── train.csv
-│   ├── val.csv
-│   └── test.csv
-├── models/
-│   ├── tfidf_vectorizer.pkl
-│   ├── logistic_regression.pkl
-│   ├── linear_svm.pkl
-│   ├── voting_ensemble.pkl
-│   ├── kmeans_model.pkl
-│   ├── label_encoder.pkl
-│   └── metrics.json
-├── src/
-│   ├── init.py
-│   ├── utils.py
-│   ├── preprocess.py
+│   ├── raw/              # Original dataset (train.csv)
+│   └── processed/        # Split datasets (train, val, test)
+├── models/               # Trained .pkl models and metrics.json
+├── src/                  # Core source code
+│   ├── preprocess.py     # Feature engineering & TF-IDF
 │   ├── model_a_supervised.py
 │   ├── model_a_unsupervised.py
 │   ├── model_b_distractors.py
-│   └── model_b_hints.py
-├── notebooks/
-│   └── colab_training.ipynb
-└── app/
-└── streamlit_app.py
+│   ├── model_b_hints.py
+│   └── utils.py          # Logging & helper functions
+├── split_data.py         # Data partitioning script
+├── train_all.py          # Main training pipeline
+└── requirements.txt      # Dependency list
+```
 
-## Training
+---
 
-### Google Colab (Recommended)
+## 🚀 Getting Started
 
-1. Open `notebooks/colab_training.ipynb` in Google Colab
-2. Mount Google Drive
-3. Upload your dataset to `/My Drive/data/` (train.csv, val.csv, test.csv)
-4. Run all cells sequentially
-5. Models will be saved to `/My Drive/models/`
+### 1. Prerequisites
+Ensure you have **Python 3.10+** installed.
 
-### Local Training
-
+### 2. Installation
 ```bash
-python -m src.preprocess  # Preprocess data
-python -m src.model_a_supervised  # Train supervised models
-python -m src.model_a_unsupervised  # Train clustering
-python -m src.model_b_distractors  # Evaluate distractors
-python -m src.model_b_hints  # Evaluate hints
+# Create a virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-## Running the App
+### 3. Running the Pipeline
+Run these commands in order to prepare the data, train the models, and launch the app:
 
-### Local
-```bash
-streamlit run app/streamlit_app.py
-```
+| Step | Command | Description |
+| :--- | :--- | :--- |
+| **1. Split Data** | `python split_data.py` | Splits raw data into Train/Val/Test sets. |
+| **2. Preprocess** | `python -m src.preprocess` | Vectorizes text and saves TF-IDF artifacts. |
+| **3. Train All** | `python train_all.py` | Trains all models and generates evaluation metrics. |
+| **4. Launch App** | `streamlit run app/streamlit_app.py` | Opens the interactive UI in your browser. |
 
-The app will open at `http://localhost:8501`
+---
 
-### Colab (Optional)
-```python
-from pyngrok import ngrok
-ngrok.connect(8501)
-# Run streamlit in background
-```
+## 📈 Evaluation Results
+All evaluation metrics, including classification reports and NLP generation scores, are automatically saved to `models/metrics.json` after running the training pipeline.
 
-## Dataset Format
+## 🧹 Cleanup for Submission
+If you need to reduce file size before submission, you can safely delete the following (they will be regenerated by the pipeline):
+- `venv/`
+- `src/__pycache__/`
+- `data/processed/*.csv`
+- `models/*.pkl` (Only if the evaluator is expected to run the training pipeline themselves)
 
-CSV files should have the following columns:
-- `article`: Full article text
-- `question`: Question text
-- `answer`: Correct answer (single letter: A, B, C, or D)
-- `A`, `B`, `C`, `D`: Answer options
-
-Example:
-article,question,answer,A,B,C,D
-"Once upon a time...",Who is the main character?,A,Alice,Bob,Charlie,Diana
-
-## Models Performance
-
-After training, check `models/metrics.json` for:
-- **Supervised**: Accuracy and F1 scores for LR, SVM, and Ensemble
-- **Clustering**: Silhouette score and Adjusted Rand Index
-- **Distractors**: Precision@3 and Recall@3
-- **Hints**: Average relevance similarity
-
-## Configuration
-
-### TF-IDF
-- Max features: 5000
-- Stop words: English
-- Location: `src/preprocess.py`
-
-### K-Means
-- Cluster range: 5-15
-- Selection: Silhouette score
-- Location: `src/model_a_unsupervised.py`
-
-### Distractors
-- Diversity penalty: 0.3
-- Top candidates: 3
-- Location: `src/model_b_distractors.py`
-
-### Hints
-- Default extraction: 3 hints
-- Ranking: TF-IDF cosine similarity
-- Location: `src/model_b_hints.py`
-
-## Troubleshooting
-
-### Models Not Loading
-- Ensure models are trained and saved in `models/` directory
-- Check that model filenames match: `tfidf_vectorizer.pkl`, `logistic_regression.pkl`, etc.
-
-### Data Not Found
-- Place CSV files in `data/` directory
-- Verify column names: article, question, answer, A, B, C, D
-
-### Streamlit Errors
-- Clear cache: `streamlit cache clear`
-- Check Python version: 3.8+
-
-## Production Notes
-
-- Error handling implemented for missing models and data
-- Session state management for persistent UI state
-- Logging utilities for debugging
-- Caching for model and data loading
-- CSV export for session logs
-
-## License
-
-MIT License - See LICENSE file for details
-
-## Contact
-
-For questions or improvements, please open an issue or submit a pull request.
+---
+Developed for the **RACE Project** submission.
