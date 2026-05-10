@@ -1,7 +1,3 @@
-"""
-Streamlit application for the QA system with 4 screens and developer dashboard.
-"""
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -20,13 +16,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from src.model_b_distractors import generate_distractors
 from src.model_b_hints import extract_hints
 
-# ============================================================================
-# Configuration and Setup
-# ============================================================================
+# Configuration
 
 st.set_page_config(
     page_title="QA System",
-    page_icon="📚",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -37,7 +30,6 @@ DATA_DIR = Path(__file__).parent.parent / "data" / "processed"
 
 @st.cache_resource
 def load_models():
-    """Load all pre-trained models."""
     try:
         models = {
             'tfidf': joblib.load(MODELS_DIR / 'tfidf_vectorizer.pkl'),
@@ -55,7 +47,6 @@ def load_models():
 
 @st.cache_resource
 def load_test_data():
-    """Load test dataset."""
     try:
         return pd.read_csv(DATA_DIR / 'test.csv')
     except FileNotFoundError:
@@ -63,16 +54,13 @@ def load_test_data():
 
 @st.cache_data
 def load_metrics():
-    """Load precomputed metrics."""
     try:
         with open(MODELS_DIR / 'metrics.json', 'r') as f:
             return json.load(f)
     except FileNotFoundError:
         return {}
 
-# ============================================================================
-# Initialize Session State
-# ============================================================================
+# Session State
 
 if 'quiz_state' not in st.session_state:
     st.session_state.quiz_state = {
@@ -91,12 +79,9 @@ if 'quiz_state' not in st.session_state:
 if 'session_log' not in st.session_state:
     st.session_state.session_log = []
 
-# ============================================================================
-# Helper Functions
-# ============================================================================
+# Helpers
 
 def extract_question(article: str) -> str:
-    """Extract a question from article (simple: first sentence with wh-word)."""
     sentences = article.split('. ')
     wh_words = ['who', 'what', 'where', 'when', 'why', 'how']
     
@@ -108,12 +93,10 @@ def extract_question(article: str) -> str:
     return (sentences[0].strip() + '?') if sentences else 'What is this about?'
 
 def get_inference_time(start_time) -> float:
-    """Calculate inference time."""
     from time import time
     return round((time() - start_time) * 1000, 2)
 
 def log_session(article: str, question: str, answer: str, is_correct: bool, model_used: str):
-    """Log user interaction."""
     st.session_state.session_log.append({
         'timestamp': datetime.now().isoformat(),
         'article': article[:100],
@@ -124,20 +107,16 @@ def log_session(article: str, question: str, answer: str, is_correct: bool, mode
     })
 
 def export_session_logs() -> str:
-    """Export session logs to CSV format."""
     if not st.session_state.session_log:
         return ""
     
     df = pd.DataFrame(st.session_state.session_log)
     return df.to_csv(index=False)
 
-# ============================================================================
-# Screen Functions
-# ============================================================================
+# Screens
 
 def screen_1_article_input():
-    """Screen 1: Article Input."""
-    st.header("📄 Article Input")
+    st.header("Article Input")
     
     test_df = load_test_data()
     
@@ -152,7 +131,7 @@ def screen_1_article_input():
         )
     
     with col2:
-        if test_df is not None and st.button("📖 Load Random from RACE"):
+        if test_df is not None and st.button("Load Random from RACE"):
             random_row = test_df.sample(1).iloc[0]
             st.session_state.quiz_state['article'] = random_row['article']
             st.session_state.quiz_state['question'] = random_row['question']
@@ -168,7 +147,7 @@ def screen_1_article_input():
     
     st.session_state.quiz_state['article'] = article_input
     
-    if st.button("➡️ Submit Article", use_container_width=True, type='primary'):
+    if st.button("Submit Article", use_container_width=True, type='primary'):
         if article_input.strip():
             st.session_state.quiz_state['question'] = extract_question(article_input)
             # Reset options so they are regenerated for the new question
@@ -179,8 +158,7 @@ def screen_1_article_input():
             st.error("Please enter an article!")
 
 def screen_2_quiz_view():
-    """Screen 2: Quiz View with question, options, and checking."""
-    st.header("❓ Quiz")
+    st.header("Quiz")
     
     models = load_models()
     if models is None:
@@ -230,7 +208,7 @@ def screen_2_quiz_view():
         # Disable button if not all hints used (as per rubric)
         hints_ready = (quiz['hints_used'] >= 3)
         
-        if st.button("✅ Check Answer", use_container_width=True, type='primary', disabled=not hints_ready):
+        if st.button("Check Answer", use_container_width=True, type='primary', disabled=not hints_ready):
             if quiz['selected_option']:
                 # Predict using ensemble
                 from time import time
@@ -255,10 +233,10 @@ def screen_2_quiz_view():
                     'Ensemble'
                 )
         if not hints_ready:
-            st.caption("🔒 View all 3 hints to unlock checking.")
+            st.caption("View all 3 hints to unlock checking.")
     
     with col2:
-        if st.button("💡 Get Next Hint", use_container_width=True, disabled=quiz['hints_used'] >= 3):
+        if st.button("Get Next Hint", use_container_width=True, disabled=quiz['hints_used'] >= 3):
             if not quiz['available_hints']:
                 quiz['available_hints'] = extract_hints(
                     quiz['article'],
@@ -273,16 +251,16 @@ def screen_2_quiz_view():
                 st.rerun()
     
     with col3:
-        if st.button("🔍 Reveal Answer", use_container_width=True, disabled=not hints_ready):
+        if st.button("Reveal Answer", use_container_width=True, disabled=not hints_ready):
             quiz['is_answered'] = True
             st.info(f"Correct Answer: {quiz['correct_answer']}")
         if not hints_ready:
-            st.caption("🔒 View all 3 hints to reveal.")
+            st.caption("View all 3 hints to reveal.")
 
     # Graduated Hint Panel (Screen 3 requirements)
     if quiz['hints_used'] > 0:
         st.divider()
-        st.subheader("💡 Graduated Hints")
+        st.subheader("Graduated Hints")
         
         for i in range(quiz['hints_used']):
             level = ["General", "Specific", "Near-Explicit"][i]
@@ -293,17 +271,15 @@ def screen_2_quiz_view():
     if quiz['is_answered']:
         st.divider()
         if quiz['answer_correct']:
-            st.success("✅ Correct!")
+            st.success("Correct!")
         else:
-            st.error(f"❌ Wrong! Correct answer: {quiz['correct_answer']}")
+            st.error(f"Wrong! Correct answer: {quiz['correct_answer']}")
 
 def screen_3_hint_panel():
-    """Screen 3: Hint Panel (Now integrated cleanly into Screen 2)."""
     pass
 
 def screen_4_dashboard():
-    """Screen 4: Developer Dashboard (sidebar)."""
-    st.sidebar.header("📊 Developer Dashboard")
+    st.sidebar.header("Developer Dashboard")
     
     metrics = load_metrics()
     
@@ -361,7 +337,7 @@ def screen_4_dashboard():
     
     # Export logs
     st.sidebar.divider()
-    if st.sidebar.button("📥 Export Session Logs"):
+    if st.sidebar.button("Export Session Logs"):
         csv_data = export_session_logs()
         if csv_data:
             st.sidebar.download_button(
@@ -371,17 +347,14 @@ def screen_4_dashboard():
                 mime="text/csv"
             )
 
-# ============================================================================
-# Main App
-# ============================================================================
+# Main
 
 def main():
-    """Main application."""
     # Dashboard in sidebar
     screen_4_dashboard()
     
     # Main content
-    st.title("📚 QA System - Quiz Master")
+    st.title("QA System - Quiz Master")
     st.write("Learn from articles with AI-powered multiple choice questions!")
     
     st.divider()
@@ -402,7 +375,7 @@ def main():
                 disabled=True,
                 key='article_display'
             )
-            if st.button("🔄 Load Different Article"):
+            if st.button("Load Different Article"):
                 st.session_state.quiz_state = {
                     'article': '',
                     'question': '',

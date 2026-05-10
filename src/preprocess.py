@@ -1,13 +1,3 @@
-"""
-Preprocessing Pipeline:
-  1. Data Cleaning — lowercasing, punctuation removal
-  2. Feature Engineering — TF-IDF vectorization with feature text
-  3. Label Encoding — One-Hot / ordinal encoding of answer labels
-  4. Feature Scaling — TF-IDF inherently normalizes; explicit note
-  5. Data Transformation — sparse matrix output
-  6. Imbalanced Data Check — class distribution analysis
-"""
-
 import re
 import pandas as pd
 import numpy as np
@@ -20,19 +10,8 @@ from src.utils import log_message, create_feature_text, save_model, ensure_direc
 
 
 class Preprocessor:
-    """
-    Handles full preprocessing pipeline for the QA dataset:
-    cleaning → feature engineering → vectorization → encoding.
-    """
     
     def __init__(self, max_features: int = 5000, stop_words: str = 'english'):
-        """
-        Initialize the preprocessor.
-        
-        Args:
-            max_features: Maximum number of features for TF-IDF vectorizer
-            stop_words: Stop words to use ('english')
-        """
         self.tfidf = TfidfVectorizer(
             max_features=max_features,
             stop_words=stop_words,
@@ -41,25 +20,16 @@ class Preprocessor:
         )
         self.label_encoder = LabelEncoder()
     
-    # ──────────────────────────────────────────
-    # Step 1: Data Cleaning
-    # ──────────────────────────────────────────
+
     
     @staticmethod
     def clean_text(text: str) -> str:
-        """
-        Clean a text string:
-          - Convert to lowercase
-          - Remove punctuation (keep alphanumeric + spaces)
-          - Collapse multiple whitespace
-        """
         text = str(text).lower()
         text = re.sub(r'[^\w\s]', ' ', text)   # remove punctuation
         text = re.sub(r'\s+', ' ', text).strip()  # collapse whitespace
         return text
     
     def clean_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Apply text cleaning to all text columns."""
         df = df.copy()
         text_cols = ['article', 'question', 'A', 'B', 'C', 'D']
         for col in text_cols:
@@ -68,13 +38,10 @@ class Preprocessor:
         log_message(f"  Cleaned {len(df)} rows (lowercase + punctuation removal)")
         return df
     
-    # ──────────────────────────────────────────
-    # Step 2: Imbalanced Data Check
-    # ──────────────────────────────────────────
+
     
     @staticmethod
     def check_class_balance(y: np.ndarray, name: str = ""):
-        """Report class distribution and whether data is imbalanced."""
         counts = pd.Series(y).value_counts().sort_index()
         ratio = counts.max() / counts.min() if counts.min() > 0 else float('inf')
         
@@ -93,22 +60,6 @@ class Preprocessor:
                      train_df: pd.DataFrame, 
                      val_df: pd.DataFrame, 
                      test_df: pd.DataFrame) -> Tuple:
-        """
-        Full preprocessing pipeline:
-          1. Clean text (lowercase, punctuation removal)
-          2. Create feature text
-          3. TF-IDF vectorization (fit on train, transform all)
-          4. Label encoding
-          5. Class balance check
-        
-        Args:
-            train_df: Training dataframe
-            val_df: Validation dataframe
-            test_df: Test dataframe
-            
-        Returns:
-            Tuple of (X_train, X_val, X_test, y_train, y_val, y_test)
-        """
         # Step 1: Clean text
         log_message("Step 1: Cleaning text (lowercase + punctuation removal)...")
         train_df = self.clean_dataframe(train_df)
@@ -146,7 +97,6 @@ class Preprocessor:
         return X_train, X_val, X_test, y_train, y_val, y_test
     
     def _print_stats(self, X_train, X_val, X_test, y_train, y_val, y_test):
-        """Print dataset statistics."""
         print("\n" + "="*60)
         print("PREPROCESSING STATISTICS")
         print("="*60)
@@ -164,18 +114,6 @@ def preprocess_and_save(train_df: pd.DataFrame,
                        val_df: pd.DataFrame, 
                        test_df: pd.DataFrame, 
                        output_dir: str) -> Tuple:
-    """
-    Preprocess data and save all artifacts.
-    
-    Args:
-        train_df: Training dataframe
-        val_df: Validation dataframe
-        test_df: Test dataframe
-        output_dir: Directory to save preprocessed data
-        
-    Returns:
-        Tuple of (X_train, X_val, X_test, y_train, y_val, y_test)
-    """
     ensure_directory(output_dir)
     
     preprocessor = Preprocessor()

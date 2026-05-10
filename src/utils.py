@@ -1,7 +1,3 @@
-"""
-Utility functions for data loading, feature engineering, and model persistence.
-"""
-
 import os
 import pandas as pd
 import joblib
@@ -11,23 +7,10 @@ from typing import Tuple, Any
 logger_enabled = True
 
 def log_message(msg: str):
-    """Simple logging utility."""
     if logger_enabled:
         print(f"[LOG] {msg}")
 
 def load_data(data_dir: str) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """
-    Load train, validation, and test datasets from CSV files.
-    
-    Args:
-        data_dir: Directory containing train.csv, val.csv, test.csv
-        
-    Returns:
-        Tuple of (train_df, val_df, test_df)
-        
-    Raises:
-        FileNotFoundError: If any required CSV is missing
-    """
     train_path = os.path.join(data_dir, 'train.csv')
     val_path = os.path.join(data_dir, 'val.csv')
     test_path = os.path.join(data_dir, 'test.csv')
@@ -50,17 +33,6 @@ def load_data(data_dir: str) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     return train_df, val_df, test_df
 
 def create_feature_text(row: pd.Series) -> str:
-    """
-    Combine article, question, and all answer options into a single feature text.
-    
-    Expected columns in row: article, question, A, B, C, D
-    
-    Args:
-        row: A pandas Series (row from DataFrame)
-        
-    Returns:
-        Combined feature text string
-    """
     article = str(row.get('article', ''))
     question = str(row.get('question', ''))
     option_a = str(row.get('A', ''))
@@ -72,30 +44,11 @@ def create_feature_text(row: pd.Series) -> str:
     return feature_text.strip()
 
 def save_model(model: Any, path: str) -> None:
-    """
-    Save a model to disk using joblib.
-    
-    Args:
-        model: The model object to save
-        path: File path where model should be saved
-    """
     os.makedirs(os.path.dirname(path), exist_ok=True)
     joblib.dump(model, path)
     log_message(f"Model saved to {path}")
 
 def load_model(path: str) -> Any:
-    """
-    Load a model from disk using joblib.
-    
-    Args:
-        path: File path of saved model
-        
-    Returns:
-        Loaded model object
-        
-    Raises:
-        FileNotFoundError: If model file does not exist
-    """
     if not os.path.exists(path):
         raise FileNotFoundError(f"Model file not found at {path}")
     
@@ -104,20 +57,14 @@ def load_model(path: str) -> Any:
     return model
 
 def ensure_directory(directory: str) -> None:
-    """Create directory if it doesn't exist."""
     os.makedirs(directory, exist_ok=True)
 
-# ────────────────────────────────────────────────────────────
-# GENERATION METRICS (BLEU, ROUGE-L, METEOR)
-# ────────────────────────────────────────────────────────────
+# Generation Metrics
 
 from collections import Counter
 import numpy as np
 
 def compute_bleu(reference_toks: list, hypothesis_toks: list, n: int = 1) -> float:
-    """
-    Simple n-gram BLEU between two token lists (unigram by default).
-    """
     if len(hypothesis_toks) == 0:
         return 0.0
     ref_ngrams = Counter(
@@ -129,9 +76,6 @@ def compute_bleu(reference_toks: list, hypothesis_toks: list, n: int = 1) -> flo
     return overlap / max(sum(hyp_ngrams.values()), 1)
 
 def compute_rouge_l(reference: str, hypothesis: str) -> float:
-    """
-    ROUGE-L (longest common subsequence based F-measure).
-    """
     ref_toks = reference.lower().split()
     hyp_toks = hypothesis.lower().split()
     m, n = len(ref_toks), len(hyp_toks)
@@ -153,9 +97,6 @@ def compute_rouge_l(reference: str, hypothesis: str) -> float:
     return 2 * prec * rec / (prec + rec)
 
 def compute_meteor(reference: str, hypothesis: str) -> float:
-    """
-    Simplified METEOR: unigram F-measure with 0.9 weight on recall.
-    """
     ref_toks = set(reference.lower().split())
     hyp_toks = set(hypothesis.lower().split())
     if not ref_toks or not hyp_toks:

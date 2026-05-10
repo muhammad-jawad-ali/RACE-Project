@@ -1,6 +1,4 @@
 """
-QA System Package - Machine Learning based question answering system.
-
 Modules:
 - utils: Data loading and utility functions
 - preprocess: TF-IDF vectorization and preprocessing

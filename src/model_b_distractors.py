@@ -1,13 +1,4 @@
-"""
-Model B: Generate and evaluate distractors for multiple-choice questions.
 
-Pipeline:
-  1. Candidate Extraction — noun-phrase & word candidates from passage
-  2. Feature Engineering — cosine similarity, char-level match, passage frequency
-  3. ML Ranker (Logistic Regression) — trained to score candidates
-  4. Diversity Penalty — ensures distractors are lexically distinct
-  5. Evaluation — BLEU, ROUGE-L, METEOR, Precision@3
-"""
 
 import re
 import pandas as pd
@@ -22,9 +13,7 @@ from src.utils import (
     log_message, ensure_directory, compute_bleu, compute_rouge_l, compute_meteor
 )
 
-# ────────────────────────────────────────────────────────────
-# 1. CANDIDATE EXTRACTION
-# ────────────────────────────────────────────────────────────
+# Candidate Extraction
 
 STOP_WORDS = {
     'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
@@ -40,14 +29,6 @@ STOP_WORDS = {
 
 def extract_candidate_phrases(article: str, question: str,
                                correct_answer: str) -> List[str]:
-    """
-    Extract candidate distractor phrases from the passage.
-
-    Strategy:
-      - Split article into sentences, then into n-grams (1–3 words).
-      - Filter out stop-only phrases and the correct answer itself.
-      - Return unique candidates.
-    """
     text = f"{article} {question}".lower()
     # Tokenise
     tokens = re.findall(r"[a-z]+(?:[-'][a-z]+)*", text)
@@ -71,12 +52,9 @@ def extract_candidate_phrases(article: str, question: str,
 
     return list(candidates)
 
-# ────────────────────────────────────────────────────────────
-# 2. FEATURE ENGINEERING FOR RANKING
-# ────────────────────────────────────────────────────────────
+# Feature Engineering
 
 def _char_match_score(candidate: str, correct: str) -> float:
-    """Character-level overlap (Jaccard of character bigrams)."""
     def char_bigrams(s):
         return set(s[i:i+2] for i in range(len(s) - 1)) if len(s) > 1 else {s}
     bg_c = char_bigrams(candidate.lower())
@@ -87,20 +65,13 @@ def _char_match_score(candidate: str, correct: str) -> float:
 
 
 def _passage_frequency(candidate: str, article: str) -> int:
-    """Count how many times the candidate appears in the article."""
     return article.lower().count(candidate.lower())
 
 
 def compute_candidate_features(candidates: List[str],
-                                correct_answer: str,
-                                article: str,
-                                tfidf_vectorizer) -> np.ndarray:
-    """
-    Build a feature matrix for each candidate:
-      f0: TF-IDF cosine similarity to correct answer
-      f1: character-level match score
-      f2: passage frequency (log-scaled)
-    """
+                               correct_answer: str,
+                               article: str,
+                               tfidf_vectorizer) -> np.ndarray:
     correct_lower = correct_answer.lower()
     all_texts = [correct_lower] + [c.lower() for c in candidates]
 
@@ -119,19 +90,11 @@ def compute_candidate_features(candidates: List[str],
 
     return np.array(features) if features else np.empty((0, 3))
 
-# ────────────────────────────────────────────────────────────
-# 3. ML RANKER
-# ────────────────────────────────────────────────────────────
+# ML Ranker
 
 def train_distractor_ranker(train_df: pd.DataFrame,
                             tfidf_vectorizer,
                             output_dir: str) -> LogisticRegression:
-    """
-    Train a Logistic Regression ranker that predicts whether a candidate
-    is a ground-truth distractor (positive) or not (negative).
-
-    Persisted via joblib to ``output_dir/distractor_ranker.pkl``.
-    """
     log_message("Building training data for distractor ranker...")
     X_all, y_all = [], []
 
@@ -178,9 +141,7 @@ def train_distractor_ranker(train_df: pd.DataFrame,
 
     return ranker
 
-# ────────────────────────────────────────────────────────────
-# 4. GENERATE DISTRACTORS (with diversity)
-# ────────────────────────────────────────────────────────────
+# Generate Distractors
 
 def generate_distractors(article: str,
                          question: str,
@@ -189,12 +150,6 @@ def generate_distractors(article: str,
                          ranker=None,
                          top_n: int = 3,
                          diversity_penalty: float = 0.3) -> List[str]:
-    """
-    Generate distractors using the ML ranker (if available) with diversity
-    penalty.
-
-    Falls back to TF-IDF cosine similarity when no ranker is provided.
-    """
     candidates = extract_candidate_phrases(article, question, correct_answer)
 
     if len(candidates) < top_n:
@@ -235,9 +190,7 @@ def generate_distractors(article: str,
 
     return selected
 
-# ────────────────────────────────────────────────────────────
-# 5. EVALUATION (BLEU / ROUGE-L / METEOR + Precision@3)
-# ────────────────────────────────────────────────────────────
+# Evaluation
 
 # Metrics are now imported from src.utils
 
@@ -245,10 +198,6 @@ def generate_distractors(article: str,
 def evaluate_distractors(test_df: pd.DataFrame,
                          tfidf_vectorizer,
                          ranker=None) -> Dict:
-    """
-    Evaluate generated distractors against ground-truth wrong options using
-    BLEU, ROUGE-L, METEOR, and Precision@3.
-    """
     log_message("Evaluating distractors on test set...")
 
     bleu_scores, rouge_scores, meteor_scores = [], [], []

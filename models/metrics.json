@@ -46,16 +46,16 @@
         }
     ],
     "clustering": {
-        "Silhouette Score": 0.0032,
-        "Adjusted Rand Index": -0.0001,
-        "Clustering Purity": 0.2773,
-        "Num Clusters": 9
+        "Silhouette Score": 0.0059,
+        "Adjusted Rand Index": 0.0001,
+        "Clustering Purity": 0.2794,
+        "Num Clusters": 10
     },
     "distractors": {
         "Precision@3": 0.0007,
-        "BLEU-1": 0.167,
-        "ROUGE-L": 0.047,
-        "METEOR": 0.0414
+        "BLEU-1": 0.1677,
+        "ROUGE-L": 0.0469,
+        "METEOR": 0.0416
     },
     "hints": {
         "Hint 1 (General) Avg Sim": 0.0119,

@@ -1,7 +1,3 @@
-"""
-Supervised learning models: Logistic Regression, SVM, Naive Bayes, and ensemble voting.
-"""
-
 import pandas as pd
 import numpy as np
 from sklearn.linear_model import LogisticRegression
@@ -23,17 +19,7 @@ from src.utils import (
 
 
 class SupervisedModels:
-    """
-    Trains and evaluates supervised models (LR, SVM, NB, and ensemble).
-    """
-    
     def __init__(self, random_state: int = 42):
-        """
-        Initialize supervised models.
-        
-        Args:
-            random_state: Random state for reproducibility
-        """
         self.random_state = random_state
         self.lr = LogisticRegression(
             max_iter=1000,
@@ -64,13 +50,6 @@ class SupervisedModels:
         self.confusion_matrices = {}
         
     def train(self, X_train, y_train):
-        """
-        Train all models on training data.
-        
-        Args:
-            X_train: Training features
-            y_train: Training labels
-        """
         log_message("Training Logistic Regression...")
         self.lr.fit(X_train, y_train)
         
@@ -84,16 +63,6 @@ class SupervisedModels:
         self.ensemble.fit(X_train, y_train)
     
     def evaluate(self, X_val, y_val) -> pd.DataFrame:
-        """
-        Evaluate all models on validation data.
-        
-        Args:
-            X_val: Validation features
-            y_val: Validation labels
-            
-        Returns:
-            DataFrame with metrics for each model
-        """
         metrics_dict = {
             'Model': [],
             'Accuracy': [],
@@ -147,10 +116,6 @@ class SupervisedModels:
         return metrics_df
 
     def evaluate_generation(self, val_df: pd.DataFrame) -> Dict:
-        """
-        Evaluate models using generation metrics (BLEU, ROUGE, METEOR).
-        Compares predicted answer text against ground-truth answer text.
-        """
         log_message("Evaluating Model A with generation metrics...")
         
         gen_metrics = {}
@@ -168,12 +133,6 @@ class SupervisedModels:
         return gen_metrics # Placeholder for now, will implement in the convenience function
     
     def save_models(self, output_dir: str):
-        """
-        Save all trained models.
-        
-        Args:
-            output_dir: Directory to save models
-        """
         ensure_directory(output_dir)
         save_model(self.lr, os.path.join(output_dir, 'logistic_regression.pkl'))
         save_model(self.svm, os.path.join(output_dir, 'linear_svm.pkl'))
@@ -190,10 +149,6 @@ class SupervisedModels:
 
 def train_and_evaluate_supervised(X_train, y_train, X_val, y_val, 
                                   output_dir: str, val_df: pd.DataFrame = None) -> pd.DataFrame:
-    """
-    Convenience function to train and evaluate supervised models.
-    Now includes generation metrics (BLEU, ROUGE, METEOR) if val_df is provided.
-    """
     supervisor = SupervisedModels()
     supervisor.train(X_train, y_train)
     metrics_df = supervisor.evaluate(X_val, y_val)

@@ -1,11 +1,4 @@
-"""
-Model B: Extract and evaluate graduated hints from articles.
 
-Graduated Hint Levels:
-  Hint 1 (General)       — least relevant sentence (broad context)
-  Hint 2 (Specific)      — moderately relevant sentence
-  Hint 3 (Near-Explicit) — the sentence most closely related to the answer
-"""
 
 import re
 import pandas as pd
@@ -18,12 +11,9 @@ from src.utils import (
 )
 
 
-# ────────────────────────────────────────────────────────────
-# Sentence-level feature helpers
-# ────────────────────────────────────────────────────────────
+# Feature Helpers
 
 def _keyword_overlap(sentence: str, question: str) -> float:
-    """Fraction of question content-words that appear in the sentence."""
     stop = {'the','a','an','is','are','was','were','of','in','to','and','or',
             'for','on','at','by','it','he','she','they','this','that','with'}
     q_words = set(question.lower().split()) - stop
@@ -34,35 +24,20 @@ def _keyword_overlap(sentence: str, question: str) -> float:
 
 
 def _sentence_position(idx: int, total: int) -> float:
-    """Normalised sentence position (0 = first, 1 = last)."""
     return idx / max(total - 1, 1)
 
 
 def _sentence_length(sentence: str) -> int:
-    """Number of tokens in the sentence."""
     return len(sentence.split())
 
 
-# ────────────────────────────────────────────────────────────
-# Core hint extraction
-# ────────────────────────────────────────────────────────────
+# Hint Extraction
 
 def extract_hints(article: str,
                   question: str,
                   tfidf_vectorizer,
                   correct_answer: str = "",
                   num_hints: int = 3) -> List[str]:
-    """
-    Extract **graduated** hints from the article.
-
-    Scoring uses TF-IDF cosine similarity to the question, combined with
-    keyword overlap, sentence position, and sentence length as features.
-
-    Returns:
-        hints[0] = general (low relevance)
-        hints[1] = specific (medium relevance)
-        hints[2] = near-explicit (highest relevance / closest to answer)
-    """
     # Split article into sentences
     sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', article) if s.strip()]
 
@@ -133,16 +108,9 @@ def extract_hints(article: str,
     return hints
 
 
-# ────────────────────────────────────────────────────────────
 # Evaluation
-# ────────────────────────────────────────────────────────────
 
 def evaluate_hints(test_df: pd.DataFrame, tfidf_vectorizer) -> Dict:
-    """
-    Evaluate hint quality:
-      - Average cosine similarity of each hint level to the question
-      - Graduation check: Hint 3 should be more relevant than Hint 1
-    """
     log_message("Evaluating hints on test set...")
 
     sims_by_level = {0: [], 1: [], 2: []}
