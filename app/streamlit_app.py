@@ -227,7 +227,10 @@ def screen_2_quiz_view():
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("✅ Check Answer", use_container_width=True, type='primary'):
+        # Disable button if not all hints used (as per rubric)
+        hints_ready = (quiz['hints_used'] >= 3)
+        
+        if st.button("✅ Check Answer", use_container_width=True, type='primary', disabled=not hints_ready):
             if quiz['selected_option']:
                 # Predict using ensemble
                 from time import time
@@ -251,40 +254,52 @@ def screen_2_quiz_view():
                     is_correct,
                     'Ensemble'
                 )
+        if not hints_ready:
+            st.caption("🔒 View all 3 hints to unlock checking.")
     
     with col2:
-        if st.button("💡 Get Hint", use_container_width=True):
-            if quiz['current_hint_idx'] < len(quiz['available_hints']):
-                st.success(f"Hint: {quiz['available_hints'][quiz['current_hint_idx']]}")
-                quiz['current_hint_idx'] += 1
-                quiz['hints_used'] += 1
-            else:
+        if st.button("💡 Get Next Hint", use_container_width=True, disabled=quiz['hints_used'] >= 3):
+            if not quiz['available_hints']:
                 quiz['available_hints'] = extract_hints(
                     quiz['article'],
                     quiz['question'],
                     models['tfidf'],
+                    correct_answer=quiz['correct_answer'],
                     num_hints=3
                 )
-                if quiz['available_hints']:
-                    st.success(f"Hint: {quiz['available_hints'][0]}")
-                    quiz['current_hint_idx'] = 1
-                    quiz['hints_used'] += 1
+            
+            if quiz['hints_used'] < 3:
+                quiz['hints_used'] += 1
+                st.rerun()
     
     with col3:
-        if st.button("🔍 Reveal Answer", use_container_width=True):
+        if st.button("🔍 Reveal Answer", use_container_width=True, disabled=not hints_ready):
             quiz['is_answered'] = True
             st.info(f"Correct Answer: {quiz['correct_answer']}")
-    
+        if not hints_ready:
+            st.caption("🔒 View all 3 hints to reveal.")
+
+    # Graduated Hint Panel (Screen 3 requirements)
+    if quiz['hints_used'] > 0:
+        st.divider()
+        st.subheader("💡 Graduated Hints")
+        
+        for i in range(quiz['hints_used']):
+            level = ["General", "Specific", "Near-Explicit"][i]
+            with st.expander(f"Hint {i+1}: {level}", expanded=(i == quiz['hints_used']-1)):
+                st.write(quiz['available_hints'][i])
+
     # Show result
     if quiz['is_answered']:
+        st.divider()
         if quiz['answer_correct']:
             st.success("✅ Correct!")
         else:
             st.error(f"❌ Wrong! Correct answer: {quiz['correct_answer']}")
 
 def screen_3_hint_panel():
-    """Screen 3: Hint Panel (collapsible in Screen 2)."""
-    pass  # Integrated into Screen 2
+    """Screen 3: Hint Panel (Now integrated cleanly into Screen 2)."""
+    pass
 
 def screen_4_dashboard():
     """Screen 4: Developer Dashboard (sidebar)."""
@@ -308,10 +323,10 @@ def screen_4_dashboard():
         # Clustering
         if 'clustering' in metrics:
             st.sidebar.write("**Clustering:**")
-            st.sidebar.metric(
-                label="Silhouette Score",
-                value=f"{metrics['clustering'].get('Silhouette Score', 0):.4f}"
-            )
+            c_met = metrics['clustering']
+            st.sidebar.metric("Silhouette Score", f"{c_met.get('Silhouette Score', 0):.4f}")
+            st.sidebar.metric("Clustering Purity", f"{c_met.get('Clustering Purity', 0):.4f}")
+            st.sidebar.metric("Adjusted Rand Index", f"{c_met.get('Adjusted Rand Index', 0):.4f}")
         
         # Distractors
         if 'distractors' in metrics:
@@ -325,8 +340,8 @@ def screen_4_dashboard():
         if 'hints' in metrics:
             st.sidebar.write("**Hints:**")
             st.sidebar.metric(
-                label="Avg Similarity",
-                value=f"{metrics['hints'].get('Average Hint Similarity', 0):.4f}"
+                label="Graduation Rate",
+                value=f"{metrics['hints'].get('Graduation Correctness Rate', 0):.4f}"
             )
     
     st.sidebar.divider()

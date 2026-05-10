@@ -1,0 +1,161 @@
+{
+    "supervised": [
+        {
+            "Model": "Logistic Regression",
+            "Accuracy": 0.2289,
+            "Precision (Macro)": 0.2224,
+            "Recall (Macro)": 0.2237,
+            "Macro F1": 0.2198,
+            "Weighted F1": 0.2234
+        },
+        {
+            "Model": "Linear SVM",
+            "Accuracy": 0.2864,
+            "Precision (Macro)": 0.3061,
+            "Recall (Macro)": 0.2712,
+            "Macro F1": 0.2262,
+            "Weighted F1": 0.2366
+        },
+        {
+            "Model": "Naive Bayes",
+            "Accuracy": 0.2506,
+            "Precision (Macro)": 0.2308,
+            "Recall (Macro)": 0.2382,
+            "Macro F1": 0.2033,
+            "Weighted F1": 0.212
+        },
+        {
+            "Model": "Soft Voting Ensemble",
+            "Accuracy": 0.2381,
+            "Precision (Macro)": 0.2217,
+            "Recall (Macro)": 0.2277,
+            "Macro F1": 0.2045,
+            "Weighted F1": 0.2118
+        }
+    ],
+    "clustering": {
+        "Silhouette Score": 0.004,
+        "Adjusted Rand Index": 0.0,
+        "Clustering Purity": 0.2773,
+        "Num Clusters": 8
+    },
+    "distractors": {
+        "Precision@3": 0.0007,
+        "BLEU-1": 0.1685,
+        "ROUGE-L": 0.0476,
+        "METEOR": 0.0421
+    },
+    "hints": {
+        "Hint 1 (General) Avg Sim": 0.0119,
+        "Hint 2 (Specific) Avg Sim": 0.035,
+        "Hint 3 (Near-Explicit) Avg Sim": 0.284,
+        "Graduation Correctness Rate": 0.992,
+        "Average Hint Similarity": 0.1103
+    },
+    "confusion_matrices": {
+        "Logistic Regression": [
+            [
+                213,
+                537,
+                675,
+                516
+            ],
+            [
+                306,
+                594,
+                795,
+                606
+            ],
+            [
+                281,
+                731,
+                703,
+                659
+            ],
+            [
+                342,
+                596,
+                732,
+                501
+            ]
+        ],
+        "Linear SVM": [
+            [
+                8,
+                516,
+                1106,
+                311
+            ],
+            [
+                5,
+                653,
+                1317,
+                326
+            ],
+            [
+                5,
+                567,
+                1469,
+                333
+            ],
+            [
+                4,
+                507,
+                1273,
+                387
+            ]
+        ],
+        "Naive Bayes": [
+            [
+                17,
+                439,
+                1071,
+                414
+            ],
+            [
+                21,
+                516,
+                1257,
+                507
+            ],
+            [
+                21,
+                587,
+                1239,
+                527
+            ],
+            [
+                34,
+                510,
+                1197,
+                430
+            ]
+        ],
+        "Soft Voting Ensemble": [
+            [
+                50,
+                516,
+                948,
+                427
+            ],
+            [
+                73,
+                579,
+                1106,
+                543
+            ],
+            [
+                71,
+                697,
+                1025,
+                581
+            ],
+            [
+                91,
+                590,
+                1052,
+                438
+            ]
+        ]
+    }
+}

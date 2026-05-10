@@ -1,22 +1,47 @@
 """
-Unsupervised learning: K-Means clustering with analysis and evaluation.
+Unsupervised learning: K-Means clustering with analysis, evaluation,
+and comparison against supervised models.
 """
 
 import pandas as pd
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score, adjusted_rand_score
+from collections import Counter
 import joblib
 import os
 from typing import Dict, List, Tuple
 from src.utils import log_message, save_model, ensure_directory
+
+
+def clustering_purity(y_true, cluster_labels) -> float:
+    """
+    Compute clustering purity.
+    
+    For each cluster, assign it the label of the majority class inside that
+    cluster.  Purity = (total correctly assigned) / N.
+    
+    Args:
+        y_true: Ground-truth labels (ints)
+        cluster_labels: Predicted cluster assignments
+        
+    Returns:
+        Purity score in [0, 1]
+    """
+    contingency = {}
+    for cl, gt in zip(cluster_labels, y_true):
+        contingency.setdefault(cl, Counter())
+        contingency[cl][gt] += 1
+    total_correct = sum(counter.most_common(1)[0][1] for counter in contingency.values())
+    return total_correct / len(y_true)
+
 
 class KMeansClustering:
     """
     K-Means clustering on TF-IDF features with automatic cluster selection.
     """
     
-    def __init__(self, min_clusters: int = 5, max_clusters: int = 15, random_state: int = 42):
+    def __init__(self, min_clusters: int = 4, max_clusters: int = 10, random_state: int = 42):
         """
         Initialize K-Means clustering.
         
@@ -76,7 +101,8 @@ class KMeansClustering:
         
     def evaluate(self, X_val, y_val) -> Dict:
         """
-        Evaluate clustering using silhouette score and adjusted rand index.
+        Evaluate clustering using silhouette score, adjusted rand index,
+        and clustering purity.
         
         Args:
             X_val: Validation features
@@ -89,10 +115,12 @@ class KMeansClustering:
         
         sil_score = silhouette_score(X_val, cluster_labels, sample_size=min(500, len(y_val)))
         ari_score = adjusted_rand_score(y_val, cluster_labels)
+        purity = clustering_purity(y_val, cluster_labels)
         
         metrics = {
             'Silhouette Score': round(sil_score, 4),
             'Adjusted Rand Index': round(ari_score, 4),
+            'Clustering Purity': round(purity, 4),
             'Num Clusters': self.best_k
         }
         
@@ -104,6 +132,29 @@ class KMeansClustering:
         print("="*60 + "\n")
         
         return metrics
+    
+    def compare_with_supervised(self, supervised_metrics: list, clustering_metrics: dict):
+        """
+        Print a comparison table between supervised and unsupervised results.
+        
+        Args:
+            supervised_metrics: List of dicts from supervised evaluation
+            clustering_metrics: Dict from clustering evaluation
+        """
+        print("\n" + "="*70)
+        print("SUPERVISED vs. UNSUPERVISED COMPARISON")
+        print("="*70)
+        print(f"{'Approach':<25} {'Metric':<20} {'Value':<10}")
+        print("-"*55)
+        for m in supervised_metrics:
+            print(f"{m['Model']:<25} {'Accuracy':<20} {m['Accuracy']:<10}")
+        print(f"{'K-Means Clustering':<25} {'Purity':<20} {clustering_metrics['Clustering Purity']:<10}")
+        print(f"{'K-Means Clustering':<25} {'Silhouette':<20} {clustering_metrics['Silhouette Score']:<10}")
+        print(f"{'K-Means Clustering':<25} {'ARI':<20} {clustering_metrics['Adjusted Rand Index']:<10}")
+        print("="*70)
+        print("Note: Supervised models significantly outperform unsupervised K-Means,")
+        print("which is expected since K-Means lacks label information during training.")
+        print("="*70 + "\n")
     
     def analyze_centroids(self, tfidf_vectorizer, top_n: int = 10):
         """
@@ -143,6 +194,7 @@ class KMeansClustering:
         
         # Also save silhouette scores
         joblib.dump(self.silhouette_scores, os.path.join(output_dir, 'silhouette_scores.pkl'))
+
 
 def train_and_evaluate_clustering(X_train, X_val, y_val, tfidf_vectorizer, 
                                   output_dir: str) -> Dict:

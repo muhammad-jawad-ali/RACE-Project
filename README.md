@@ -168,4 +168,3 @@ MIT License - See LICENSE file for details
 ## Contact
 
 For questions or improvements, please open an issue or submit a pull request.
-Now I'll create the __init__.py file for the src package:
