@@ -50,7 +50,8 @@ Ensure you have **Python 3.10+** installed.
 ### 2. Installation
 ```bash
 # Create a virtual environment
-python3 -m venv venv
+brew install python@3.11
+python3.11 -m venv venv
 source venv/bin/activate
 
 # Install dependencies
