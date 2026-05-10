@@ -18,7 +18,9 @@ from collections import Counter
 from typing import List, Tuple, Dict
 import joblib
 import os
-from src.utils import log_message, ensure_directory
+from src.utils import (
+    log_message, ensure_directory, compute_bleu, compute_rouge_l, compute_meteor
+)
 
 # ────────────────────────────────────────────────────────────
 # 1. CANDIDATE EXTRACTION
@@ -237,61 +239,7 @@ def generate_distractors(article: str,
 # 5. EVALUATION (BLEU / ROUGE-L / METEOR + Precision@3)
 # ────────────────────────────────────────────────────────────
 
-def _bleu_score(reference: List[str], hypothesis: List[str], n: int = 1) -> float:
-    """
-    Simple n-gram BLEU between two token lists (unigram by default).
-    """
-    if len(hypothesis) == 0:
-        return 0.0
-    ref_ngrams = Counter(
-        tuple(reference[i:i + n]) for i in range(len(reference) - n + 1))
-    hyp_ngrams = Counter(
-        tuple(hypothesis[i:i + n]) for i in range(len(hypothesis) - n + 1))
-    overlap = sum(min(hyp_ngrams[ng], ref_ngrams.get(ng, 0))
-                  for ng in hyp_ngrams)
-    return overlap / max(sum(hyp_ngrams.values()), 1)
-
-
-def _rouge_l(reference: str, hypothesis: str) -> float:
-    """
-    ROUGE-L (longest common subsequence based F-measure).
-    """
-    ref_toks = reference.lower().split()
-    hyp_toks = hypothesis.lower().split()
-    m, n = len(ref_toks), len(hyp_toks)
-    if m == 0 or n == 0:
-        return 0.0
-    # LCS via DP
-    dp = [[0] * (n + 1) for _ in range(m + 1)]
-    for i in range(1, m + 1):
-        for j in range(1, n + 1):
-            if ref_toks[i - 1] == hyp_toks[j - 1]:
-                dp[i][j] = dp[i - 1][j - 1] + 1
-            else:
-                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])
-    lcs = dp[m][n]
-    prec = lcs / n
-    rec = lcs / m
-    if prec + rec == 0:
-        return 0.0
-    return 2 * prec * rec / (prec + rec)
-
-
-def _meteor_simple(reference: str, hypothesis: str) -> float:
-    """
-    Simplified METEOR: unigram F-measure with 0.9 weight on recall.
-    """
-    ref_toks = set(reference.lower().split())
-    hyp_toks = set(hypothesis.lower().split())
-    if not ref_toks or not hyp_toks:
-        return 0.0
-    matches = len(ref_toks & hyp_toks)
-    prec = matches / len(hyp_toks)
-    rec = matches / len(ref_toks)
-    if prec + rec == 0:
-        return 0.0
-    alpha = 0.9
-    return (prec * rec) / (alpha * prec + (1 - alpha) * rec)
+# Metrics are now imported from src.utils
 
 
 def evaluate_distractors(test_df: pd.DataFrame,
@@ -333,9 +281,9 @@ def evaluate_distractors(test_df: pd.DataFrame,
         ref_toks = ref_text.split()
         hyp_toks = hyp_text.split()
 
-        bleu_scores.append(_bleu_score(ref_toks, hyp_toks, n=1))
-        rouge_scores.append(_rouge_l(ref_text, hyp_text))
-        meteor_scores.append(_meteor_simple(ref_text, hyp_text))
+        bleu_scores.append(compute_bleu(ref_toks, hyp_toks, n=1))
+        rouge_scores.append(compute_rouge_l(ref_text, hyp_text))
+        meteor_scores.append(compute_meteor(ref_text, hyp_text))
 
         # Precision@3 (exact match)
         gen_set = set(g.lower() for g in generated)

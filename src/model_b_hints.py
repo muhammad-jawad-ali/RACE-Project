@@ -13,7 +13,9 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.linear_model import LogisticRegression
 from typing import List, Dict
-from src.utils import log_message
+from src.utils import (
+    log_message, compute_bleu, compute_rouge_l, compute_meteor
+)
 
 
 # ────────────────────────────────────────────────────────────
@@ -180,11 +182,28 @@ def evaluate_hints(test_df: pd.DataFrame, tfidf_vectorizer) -> Dict:
 
     grad_rate = round(graduation_correct / max(total_samples, 1), 4)
 
+    # Compute aggregate generation metrics for Hint 3 (Near-Explicit)
+    # as it's the most "generative" representation of the answer context
+    h3_bleu, h3_rouge, h3_meteor = [], [], []
+    for _, row in test_df.iterrows():
+        article = str(row['article'])
+        question = str(row['question'])
+        ans_letter = str(row['answer']).strip()
+        correct_text = str(row.get(ans_letter, ''))
+        hints = extract_hints(article, question, tfidf_vectorizer, correct_text)
+        if len(hints) == 3:
+            h3_bleu.append(compute_bleu(correct_text.lower().split(), hints[2].lower().split()))
+            h3_rouge.append(compute_rouge_l(correct_text, hints[2]))
+            h3_meteor.append(compute_meteor(correct_text, hints[2]))
+
     metrics = {
         'Hint 1 (General) Avg Sim': avg_sims[0],
         'Hint 2 (Specific) Avg Sim': avg_sims[1],
         'Hint 3 (Near-Explicit) Avg Sim': avg_sims[2],
         'Graduation Correctness Rate': grad_rate,
+        'BLEU-1 (Hint 3)': round(np.mean(h3_bleu), 4) if h3_bleu else 0.0,
+        'ROUGE-L (Hint 3)': round(np.mean(h3_rouge), 4) if h3_rouge else 0.0,
+        'METEOR (Hint 3)': round(np.mean(h3_meteor), 4) if h3_meteor else 0.0,
         'Average Hint Similarity': round(
             float(np.mean([v for vals in sims_by_level.values() for v in vals])), 4
         ) if any(sims_by_level.values()) else 0.0

@@ -6,7 +6,10 @@
             "Precision (Macro)": 0.2224,
             "Recall (Macro)": 0.2237,
             "Macro F1": 0.2198,
-            "Weighted F1": 0.2234
+            "Weighted F1": 0.2234,
+            "BLEU-1": 0.3783,
+            "ROUGE-L": 0.3685,
+            "METEOR": 0.3754
         },
         {
             "Model": "Linear SVM",
@@ -14,7 +17,10 @@
             "Precision (Macro)": 0.3061,
             "Recall (Macro)": 0.2712,
             "Macro F1": 0.2262,
-            "Weighted F1": 0.2366
+            "Weighted F1": 0.2366,
+            "BLEU-1": 0.4203,
+            "ROUGE-L": 0.4123,
+            "METEOR": 0.4182
         },
         {
             "Model": "Naive Bayes",
@@ -22,7 +28,10 @@
             "Precision (Macro)": 0.2308,
             "Recall (Macro)": 0.2382,
             "Macro F1": 0.2033,
-            "Weighted F1": 0.212
+            "Weighted F1": 0.212,
+            "BLEU-1": 0.3939,
+            "ROUGE-L": 0.3854,
+            "METEOR": 0.3918
         },
         {
             "Model": "Soft Voting Ensemble",
@@ -30,26 +39,32 @@
             "Precision (Macro)": 0.2217,
             "Recall (Macro)": 0.2277,
             "Macro F1": 0.2045,
-            "Weighted F1": 0.2118
+            "Weighted F1": 0.2118,
+            "BLEU-1": 0.3846,
+            "ROUGE-L": 0.3756,
+            "METEOR": 0.3825
         }
     ],
     "clustering": {
-        "Silhouette Score": 0.004,
-        "Adjusted Rand Index": 0.0,
+        "Silhouette Score": 0.0032,
+        "Adjusted Rand Index": -0.0001,
         "Clustering Purity": 0.2773,
-        "Num Clusters": 8
+        "Num Clusters": 9
     },
     "distractors": {
         "Precision@3": 0.0007,
-        "BLEU-1": 0.1685,
-        "ROUGE-L": 0.0476,
-        "METEOR": 0.0421
+        "BLEU-1": 0.167,
+        "ROUGE-L": 0.047,
+        "METEOR": 0.0414
     },
     "hints": {
         "Hint 1 (General) Avg Sim": 0.0119,
         "Hint 2 (Specific) Avg Sim": 0.035,
         "Hint 3 (Near-Explicit) Avg Sim": 0.284,
         "Graduation Correctness Rate": 0.992,
+        "BLEU-1 (Hint 3)": 0.0648,
+        "ROUGE-L (Hint 3)": 0.0871,
+        "METEOR (Hint 3)": 0.1777,
         "Average Hint Similarity": 0.1103
     },
     "confusion_matrices": {

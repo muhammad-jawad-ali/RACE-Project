@@ -106,3 +106,64 @@ def load_model(path: str) -> Any:
 def ensure_directory(directory: str) -> None:
     """Create directory if it doesn't exist."""
     os.makedirs(directory, exist_ok=True)
+
+# ────────────────────────────────────────────────────────────
+# GENERATION METRICS (BLEU, ROUGE-L, METEOR)
+# ────────────────────────────────────────────────────────────
+
+from collections import Counter
+import numpy as np
+
+def compute_bleu(reference_toks: list, hypothesis_toks: list, n: int = 1) -> float:
+    """
+    Simple n-gram BLEU between two token lists (unigram by default).
+    """
+    if len(hypothesis_toks) == 0:
+        return 0.0
+    ref_ngrams = Counter(
+        tuple(reference_toks[i:i + n]) for i in range(len(reference_toks) - n + 1))
+    hyp_ngrams = Counter(
+        tuple(hypothesis_toks[i:i + n]) for i in range(len(hypothesis_toks) - n + 1))
+    overlap = sum(min(hyp_ngrams[ng], ref_ngrams.get(ng, 0))
+                  for ng in hyp_ngrams)
+    return overlap / max(sum(hyp_ngrams.values()), 1)
+
+def compute_rouge_l(reference: str, hypothesis: str) -> float:
+    """
+    ROUGE-L (longest common subsequence based F-measure).
+    """
+    ref_toks = reference.lower().split()
+    hyp_toks = hypothesis.lower().split()
+    m, n = len(ref_toks), len(hyp_toks)
+    if m == 0 or n == 0:
+        return 0.0
+    # LCS via DP
+    dp = [[0] * (n + 1) for _ in range(m + 1)]
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            if ref_toks[i - 1] == hyp_toks[j - 1]:
+                dp[i][j] = dp[i - 1][j - 1] + 1
+            else:
+                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])
+    lcs = dp[m][n]
+    prec = lcs / n
+    rec = lcs / m
+    if prec + rec == 0:
+        return 0.0
+    return 2 * prec * rec / (prec + rec)
+
+def compute_meteor(reference: str, hypothesis: str) -> float:
+    """
+    Simplified METEOR: unigram F-measure with 0.9 weight on recall.
+    """
+    ref_toks = set(reference.lower().split())
+    hyp_toks = set(hypothesis.lower().split())
+    if not ref_toks or not hyp_toks:
+        return 0.0
+    matches = len(ref_toks & hyp_toks)
+    prec = matches / len(hyp_toks)
+    rec = matches / len(ref_toks)
+    if prec + rec == 0:
+        return 0.0
+    alpha = 0.9
+    return (prec * rec) / (alpha * prec + (1 - alpha) * rec)

@@ -33,7 +33,7 @@ def main():
 
     # 4. Train and Evaluate Supervised Models
     log_message("--- Training Supervised Models ---")
-    supervised_metrics_df = train_and_evaluate_supervised(X_train, y_train, X_val, y_val, MODELS_DIR)
+    supervised_metrics_df = train_and_evaluate_supervised(X_train, y_train, X_val, y_val, MODELS_DIR, val_df=val_df)
     supervised_metrics = supervised_metrics_df.to_dict(orient='records')
 
     # 5. Train and Evaluate Unsupervised Models (K-Means)

@@ -16,7 +16,10 @@ from sklearn.metrics import (
 import joblib
 import os
 from typing import Dict, Tuple
-from src.utils import log_message, save_model, ensure_directory
+from src.utils import (
+    log_message, save_model, ensure_directory, 
+    compute_bleu, compute_rouge_l, compute_meteor
+)
 
 
 class SupervisedModels:
@@ -142,6 +145,27 @@ class SupervisedModels:
         print("="*60 + "\n")
         
         return metrics_df
+
+    def evaluate_generation(self, val_df: pd.DataFrame) -> Dict:
+        """
+        Evaluate models using generation metrics (BLEU, ROUGE, METEOR).
+        Compares predicted answer text against ground-truth answer text.
+        """
+        log_message("Evaluating Model A with generation metrics...")
+        
+        gen_metrics = {}
+        models = {
+            'Logistic Regression': self.lr,
+            'Linear SVM': self.svm,
+            'Naive Bayes': self.nb,
+            'Soft Voting Ensemble': self.ensemble
+        }
+        
+        # We need the TF-IDF features for the validation set again
+        # but the class doesn't store them. This is usually called from train_all.py
+        # where features are available. 
+        # For simplicity, we assume this is called after predict has been done or we pass features.
+        return gen_metrics # Placeholder for now, will implement in the convenience function
     
     def save_models(self, output_dir: str):
         """
@@ -165,23 +189,59 @@ class SupervisedModels:
 
 
 def train_and_evaluate_supervised(X_train, y_train, X_val, y_val, 
-                                  output_dir: str) -> pd.DataFrame:
+                                  output_dir: str, val_df: pd.DataFrame = None) -> pd.DataFrame:
     """
     Convenience function to train and evaluate supervised models.
-    
-    Args:
-        X_train: Training features
-        y_train: Training labels
-        X_val: Validation features
-        y_val: Validation labels
-        output_dir: Directory to save models
-        
-    Returns:
-        DataFrame with metrics
+    Now includes generation metrics (BLEU, ROUGE, METEOR) if val_df is provided.
     """
     supervisor = SupervisedModels()
     supervisor.train(X_train, y_train)
     metrics_df = supervisor.evaluate(X_val, y_val)
-    supervisor.save_models(output_dir)
     
+    if val_df is not None:
+        log_message("Computing generation metrics for Model A...")
+        # Add generation metrics to the dataframe
+        bleu_scores = []
+        rouge_scores = []
+        meteor_scores = []
+        
+        models = {
+            'Logistic Regression': supervisor.lr,
+            'Linear SVM': supervisor.svm,
+            'Naive Bayes': supervisor.nb,
+            'Soft Voting Ensemble': supervisor.ensemble
+        }
+        
+        for model_name, model in models.items():
+            y_pred = model.predict(X_val)
+            
+            sample_bleus, sample_rouges, sample_meteors = [], [], []
+            
+            # Label map: 0->A, 1->B, 2->C, 3->D
+            label_map = {0: 'A', 1: 'B', 2: 'C', 3: 'D'}
+            
+            for i, (_, row) in enumerate(val_df.iterrows()):
+                pred_label = label_map.get(y_pred[i], 'A')
+                gt_label = str(row['answer']).strip()
+                
+                pred_text = str(row.get(pred_label, '')).lower()
+                gt_text = str(row.get(gt_label, '')).lower()
+                
+                sample_bleus.append(compute_bleu(gt_text.split(), pred_text.split()))
+                sample_rouges.append(compute_rouge_l(gt_text, pred_text))
+                sample_meteors.append(compute_meteor(gt_text, pred_text))
+            
+            # Update metrics_df with average scores
+            idx = metrics_df[metrics_df['Model'] == model_name].index[0]
+            metrics_df.loc[idx, 'BLEU-1'] = round(np.mean(sample_bleus), 4)
+            metrics_df.loc[idx, 'ROUGE-L'] = round(np.mean(sample_rouges), 4)
+            metrics_df.loc[idx, 'METEOR'] = round(np.mean(sample_meteors), 4)
+
+        print("\n" + "="*60)
+        print("MODEL A GENERATION METRICS")
+        print("="*60)
+        print(metrics_df[['Model', 'BLEU-1', 'ROUGE-L', 'METEOR']].to_string(index=False))
+        print("="*60 + "\n")
+
+    supervisor.save_models(output_dir)
     return metrics_df
