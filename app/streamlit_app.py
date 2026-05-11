@@ -143,6 +143,8 @@ def screen_1_article_input():
             # Reset options and state
             st.session_state.quiz_state['options'] = []
             st.session_state.quiz_state['is_answered'] = False
+            st.session_state.quiz_state['hints_used'] = 0
+            st.session_state.quiz_state['available_hints'] = []
             st.rerun()
     
     st.session_state.quiz_state['article'] = article_input
@@ -153,6 +155,8 @@ def screen_1_article_input():
             # Reset options so they are regenerated for the new question
             st.session_state.quiz_state['options'] = []
             st.session_state.quiz_state['is_answered'] = False
+            st.session_state.quiz_state['hints_used'] = 0
+            st.session_state.quiz_state['available_hints'] = []
             st.rerun()
         else:
             st.error("Please enter an article!")
@@ -202,13 +206,14 @@ def screen_2_quiz_view():
         key='option_radio'
     )
     
+    # Check if all hints are used for Reveal Answer restriction
+    hints_ready = (quiz['hints_used'] >= 3)
+    
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        # Disable button if not all hints used (as per rubric)
-        hints_ready = (quiz['hints_used'] >= 3)
-        
-        if st.button("Check Answer", use_container_width=True, type='primary', disabled=not hints_ready):
+        # Check Answer is always enabled if an option is selected
+        if st.button("Check Answer", use_container_width=True, type='primary'):
             if quiz['selected_option']:
                 # Predict using ensemble
                 from time import time
@@ -232,23 +237,28 @@ def screen_2_quiz_view():
                     is_correct,
                     'Ensemble'
                 )
-        if not hints_ready:
-            st.caption("View all 3 hints to unlock checking.")
+            else:
+                st.warning("Please select an option first!")
     
+    def handle_hint_request():
+        if not quiz['available_hints']:
+            quiz['available_hints'] = extract_hints(
+                quiz['article'],
+                quiz['question'],
+                models['tfidf'],
+                correct_answer=quiz['correct_answer'],
+                num_hints=3
+            )
+        if quiz['hints_used'] < 3:
+            quiz['hints_used'] += 1
+
     with col2:
-        if st.button("Get Next Hint", use_container_width=True, disabled=quiz['hints_used'] >= 3):
-            if not quiz['available_hints']:
-                quiz['available_hints'] = extract_hints(
-                    quiz['article'],
-                    quiz['question'],
-                    models['tfidf'],
-                    correct_answer=quiz['correct_answer'],
-                    num_hints=3
-                )
-            
-            if quiz['hints_used'] < 3:
-                quiz['hints_used'] += 1
-                st.rerun()
+        st.button(
+            "Get Next Hint", 
+            use_container_width=True, 
+            disabled=quiz['hints_used'] >= 3,
+            on_click=handle_hint_request
+        )
     
     with col3:
         if st.button("Reveal Answer", use_container_width=True, disabled=not hints_ready):
@@ -258,14 +268,16 @@ def screen_2_quiz_view():
             st.caption("View all 3 hints to reveal.")
 
     # Graduated Hint Panel (Screen 3 requirements)
-    if quiz['hints_used'] > 0:
+    if quiz['hints_used'] > 0 and quiz['available_hints']:
         st.divider()
         st.subheader("Graduated Hints")
         
         for i in range(quiz['hints_used']):
-            level = ["General", "Specific", "Near-Explicit"][i]
-            with st.expander(f"Hint {i+1}: {level}", expanded=(i == quiz['hints_used']-1)):
-                st.write(quiz['available_hints'][i])
+            if i < len(quiz['available_hints']):
+                level = ["General", "Specific", "Near-Explicit"][i]
+                # Keep all revealed hints expanded as they are opened one by one
+                with st.expander(f"Hint {i+1}: {level}", expanded=True):
+                    st.write(quiz['available_hints'][i])
 
     # Show result
     if quiz['is_answered']:
